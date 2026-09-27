@@ -5,7 +5,6 @@ import re
 import streamlit as st
 from openai import OpenAI
 
-
 # =============================================================================
 # 1. PAGE CONFIGURATION
 # =============================================================================
@@ -16,278 +15,154 @@ st.set_page_config(
     layout="centered"
 )
 
-
 # =============================================================================
-# 2. CHATGPT-STYLE THEME
+# 2. DYNAMIC THEME
 # =============================================================================
 
 st.markdown("""
 <style>
 
-/* ============================================================
-   MAIN APP
-   ============================================================ */
-
-.stApp {
-    background-color: var(--background-color) !important;
-    color: var(--text-color) !important;
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-core: #000000;
+        --bg-secondary: #121212;
+        --text-core: #ffffff;
+        --border-core: #2d2d2d;
+        --btn-hover: #1f1f1f;
+    }
 }
 
-[data-testid="stAppViewContainer"] {
-    background-color: var(--background-color) !important;
+@media (prefers-color-scheme: light) {
+    :root {
+        --bg-core: #ffffff;
+        --bg-secondary: #f4f4f4;
+        --text-core: #000000;
+        --border-core: #e0e0e0;
+        --btn-hover: #eaeaea;
+    }
 }
 
+html, body, .stApp,
+[data-testid="stAppViewContainer"],
 [data-testid="stAppViewMain"] {
-    background-color: var(--background-color) !important;
+    background-color: var(--bg-core) !important;
+    color: var(--text-core) !important;
 }
-
-
-/* ============================================================
-   SIDEBAR
-   ============================================================ */
 
 section[data-testid="stSidebar"] {
-    background-color: var(--secondary-background-color) !important;
-    border-right: 1px solid var(--border-color) !important;
+    background-color: var(--bg-secondary) !important;
+    border-right: 1px solid var(--border-core) !important;
 }
 
 section[data-testid="stSidebar"] * {
-    color: var(--text-color) !important;
+    color: var(--text-core) !important;
 }
 
-
-/* ============================================================
-   GENERAL TEXT
-   ============================================================ */
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p,
-span,
-label {
-    color: var(--text-color) !important;
+h1, h2, h3, h4, h5, h6, p, span, label, li {
+    color: var(--text-core) !important;
 }
-
-
-/* ============================================================
-   CHAT MESSAGES
-   ============================================================ */
 
 [data-testid="stChatMessage"] {
     background: transparent !important;
     border: none !important;
-    padding-top: 14px !important;
-    padding-bottom: 14px !important;
 }
-
-
-/* ============================================================
-   USER MESSAGE
-   ============================================================ */
 
 [data-testid="stChatMessage"]:has(
     [data-testid="stChatMessageAvatar"] img[alt="user"]
 ) {
-    background-color: var(--secondary-background-color) !important;
-    color: var(--text-color) !important;
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-core) !important;
     border-radius: 18px !important;
     padding: 12px 18px !important;
     margin-left: auto !important;
     max-width: 75% !important;
     width: fit-content !important;
+    border: 1px solid var(--border-core) !important;
 }
-
-
-/* ============================================================
-   ASSISTANT MESSAGE
-   ============================================================ */
 
 [data-testid="stChatMessage"]:has(
     [data-testid="stChatMessageAvatar"] img[alt="assistant"]
 ) {
     background-color: transparent !important;
-    color: var(--text-color) !important;
+    color: var(--text-core) !important;
     max-width: 100% !important;
 }
 
-
-/* ============================================================
-   CHAT TEXT
-   ============================================================ */
-
-[data-testid="stChatMessage"] p,
-[data-testid="stChatMessage"] li,
-[data-testid="stChatMessage"] span {
-    color: var(--text-color) !important;
-    line-height: 1.6 !important;
-}
-
-
-/* ============================================================
-   CHAT INPUT
-   ============================================================ */
-
-[data-testid="stChatInputContainer"] {
-    background: transparent !important;
+div[data-testid="stChatInputContainer"],
+div[data-testid="stChatInputContainer"] > div {
+    background-color: var(--bg-core) !important;
     border: none !important;
     box-shadow: none !important;
 }
 
-[data-testid="stChatInput"] {
-    background: transparent !important;
-    border: none !important;
-}
-
-
-/* ============================================================
-   CHAT INPUT TEXT BOX
-   ============================================================ */
-
 [data-testid="stChatInput"] textarea {
-    background-color: var(--secondary-background-color) !important;
-    color: var(--text-color) !important;
-    border: 1px solid var(--border-color) !important;
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-core) !important;
+    border: 1px solid var(--border-core) !important;
     border-radius: 26px !important;
     padding: 14px 55px 14px 18px !important;
     font-size: 16px !important;
-    min-height: 52px !important;
 }
 
-
-/* ============================================================
-   PLACEHOLDER TEXT
-   ============================================================ */
-
 [data-testid="stChatInput"] textarea::placeholder {
-    color: var(--text-color) !important;
+    color: var(--text-core) !important;
     opacity: 0.55 !important;
 }
 
-
-/* ============================================================
-   INPUT FOCUS
-   ============================================================ */
-
-[data-testid="stChatInput"] textarea:focus {
-    outline: none !important;
-}
-
-
-/* ============================================================
-   QUICK SUGGESTION BUTTONS
-   ============================================================ */
-
 div.stButton > button {
-    background-color: var(--secondary-background-color) !important;
-    color: var(--text-color) !important;
-    border: 1px solid var(--border-color) !important;
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-core) !important;
+    border: 1px solid var(--border-core) !important;
     border-radius: 14px !important;
     min-height: 70px !important;
     padding: 14px 16px !important;
     text-align: left !important;
-    transition: 0.15s ease !important;
+    width: 100% !important;
+    transition: all 0.15s ease !important;
 }
-
-
-/* ============================================================
-   BUTTON HOVER
-   ============================================================ */
 
 div.stButton > button:hover {
-    background-color: var(--background-color) !important;
-    border-color: var(--border-color) !important;
-    transform: translateY(-1px) !important;
+    background-color: var(--btn-hover) !important;
 }
-
-
-/* ============================================================
-   SIDEBAR BUTTON
-   ============================================================ */
 
 section[data-testid="stSidebar"] div.stButton > button {
     min-height: 45px !important;
     text-align: center !important;
 }
 
-
-/* ============================================================
-   DIVIDERS
-   ============================================================ */
-
 hr {
-    border-color: var(--border-color) !important;
+    border-color: var(--border-core) !important;
 }
-
-
-/* ============================================================
-   HEADER
-   ============================================================ */
 
 header {
     background: transparent !important;
 }
 
-
-/* ============================================================
-   FOOTER
-   ============================================================ */
-
 footer {
     visibility: hidden;
-}
-
-
-/* ============================================================
-   MOBILE
-   ============================================================ */
-
-@media (max-width: 768px) {
-
-    [data-testid="stChatMessage"] {
-        padding-left: 8px !important;
-        padding-right: 8px !important;
-    }
-
-    [data-testid="stChatMessage"]:has(
-        [data-testid="stChatMessageAvatar"] img[alt="user"]
-    ) {
-        max-width: 90% !important;
-    }
-
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-
 # =============================================================================
-# 3. HUGGING FACE CONNECTION
-# =============================================================================
-# IMPORTANT:
-# client is defined BEFORE the chat code.
-# This prevents the NameError.
+# 3. HUGGING FACE CLOUD API
 # =============================================================================
 
 HF_TOKEN = os.environ.get("HF_TOKEN")
-
 client = None
 
 if HF_TOKEN:
     try:
         client = OpenAI(
-            base_url="https://huggingface.co/v1",
+            base_url="https://router.huggingface.co/v1",
             api_key=HF_TOKEN
         )
     except Exception:
         client = None
 
-
 # =============================================================================
-# 4. TITLE
+# 4. BRAND HEADER
 # =============================================================================
 
 st.markdown(
@@ -297,36 +172,26 @@ st.markdown(
         padding-top: 25px;
         padding-bottom: 20px;
     ">
-
-        <h1 style="
-            font-size: 30px;
-            margin-bottom: 5px;
-        ">
+        <h1 style="font-size: 30px; margin-bottom: 5px;">
             🤖 Ronsard AI
         </h1>
 
-        <p style="
-            opacity: 0.6;
-            font-size: 15px;
-        ">
+        <p style="opacity: 0.6; font-size: 15px;">
             Your intelligent knowledge hub
         </p>
-
     </div>
     """,
     unsafe_allow_html=True
 )
 
-
 # =============================================================================
-# 5. CHAT MEMORY
+# 5. SESSION STATE
 # =============================================================================
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 card_prompt = None
-
 
 # =============================================================================
 # 6. SIDEBAR
@@ -337,9 +202,7 @@ with st.sidebar:
     st.header("⚙️ Chatbot Settings")
 
     if st.button("🗑️ Clear Chat History"):
-
         st.session_state.messages = []
-
         st.rerun()
 
     st.write("---")
@@ -348,22 +211,17 @@ with st.sidebar:
         "Powered by Ronsard Core v3 & Hugging Face Cloud"
     )
 
-
 # =============================================================================
-# 7. HELPER FUNCTIONS
+# 7. MATH FUNCTIONS
 # =============================================================================
 
-def get_number(text):
-
-    match = re.search(
+def get_numbers(text):
+    matches = re.findall(
         r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)",
         text
     )
 
-    if match:
-        return float(match.group())
-
-    return None
+    return [float(number) for number in matches]
 
 
 def format_number(number):
@@ -378,15 +236,13 @@ def format_number(number):
 
 
 # =============================================================================
-# 8. DISPLAY PREVIOUS MESSAGES
+# 8. DISPLAY OLD MESSAGES
 # =============================================================================
 
 for message in st.session_state.messages:
 
     with st.chat_message(message["role"]):
-
         st.markdown(message["content"])
-
 
 # =============================================================================
 # 9. QUICK SUGGESTIONS
@@ -396,92 +252,65 @@ if len(st.session_state.messages) == 0:
 
     st.write("---")
 
-    st.write(
-        "✨ **Quick Suggestion Shortcuts**"
-    )
+    st.write("✨ **Quick Suggestion Shortcuts**")
 
     col1, col2 = st.columns(2)
 
     with col1:
 
         if st.button(
-            "🏫 About École Ronsard\n"
-            "Learn about curriculum & origins"
+            "🏫 About École Ronsard\nLearn about curriculum & origins"
         ):
-
             card_prompt = "what is ecole ronsard"
 
         if st.button(
-            "🧮 Math Squaring Engine\n"
-            "Calculate values up to billions"
+            "🧮 Math Squaring Engine\nCalculate values up to billions"
         ):
-
             card_prompt = "square 12"
-
 
     with col2:
 
         if st.button(
-            "🎮 Minecraft Optimization Tips\n"
-            "Maximize frames per second"
+            "🎮 Minecraft Optimization Tips\nMaximize frames per second"
         ):
-
             card_prompt = "minecraft"
 
         if st.button(
-            "🌍 Ask Local Cloud AI\n"
-            "Test the Llama-3 fallback brain"
+            "🌍 Ask Local Cloud AI\nTest the Llama-3 fallback brain"
         ):
-
             card_prompt = "explain black holes like I am five"
 
     st.write("---")
-
 
 # =============================================================================
 # 10. CHAT INPUT
 # =============================================================================
 
-typed_input = st.chat_input(
-    "What do you need 💀 lol:"
-)
+typed_input = st.chat_input("What do you need 💀 lol?")
 
-user_input = None
-
-if card_prompt:
-
-    user_input = card_prompt
-
-elif typed_input:
-
-    user_input = typed_input
-
+user_input = card_prompt if card_prompt else typed_input
 
 # =============================================================================
-# 11. MAIN CHAT PROCESSING
+# 11. MAIN CHAT SYSTEM
 # =============================================================================
 
 if user_input:
 
     # -------------------------------------------------------------------------
-    # USER MESSAGE
+    # SHOW USER MESSAGE
     # -------------------------------------------------------------------------
 
     with st.chat_message("user"):
-
         st.markdown(user_input)
-
 
     st.session_state.messages.append({
         "role": "user",
         "content": user_input
     })
 
-
     user_query = user_input.strip().lower()
 
     ai_response = ""
-
 
     # -------------------------------------------------------------------------
     # ASSISTANT RESPONSE
@@ -489,9 +318,8 @@ if user_input:
 
     with st.chat_message("assistant"):
 
-
         # =====================================================================
-        # LAYER 1 — CUSTOM RESPONSES
+        # LAYER 1 — BASIC INFORMATION
         # =====================================================================
 
         if user_query in ["hello", "hi", "hey"]:
@@ -501,7 +329,6 @@ if user_input:
             )
 
             st.markdown(ai_response)
-
 
         elif (
             "your name" in user_query
@@ -514,26 +341,32 @@ if user_input:
 
             st.markdown(ai_response)
 
-
         elif "weather" in user_query:
 
             ai_response = (
                 "I cannot check live weather yet, "
-                "but I can answer lots of other questions!"
+                "but it looks like a great day to code! ☀️"
             )
 
             st.markdown(ai_response)
 
+        # =====================================================================
+        # MINECRAFT
+        # =====================================================================
 
         elif "minecraft" in user_query:
 
             ai_response = (
-                "Minecraft is awesome! 🎮 Performance mods such as "
-                "Sodium and Lithium can help improve FPS."
+                "Minecraft is awesome! 🎮\n\n"
+                "Performance mods such as Sodium and Lithium "
+                "can help improve FPS."
             )
 
             st.markdown(ai_response)
 
+        # =====================================================================
+        # ÉCOLE RONSARD
+        # =====================================================================
 
         elif (
             "what is ecole ronsard" in user_query
@@ -544,24 +377,24 @@ if user_input:
 
             ai_response = (
                 "École Ronsard is a bilingual French and English "
-                "international school established in 2009."
+                "international school established in 2009, offering "
+                "education from Nursery through Secondary."
             )
 
             st.markdown(ai_response)
-
 
         elif (
             "where is ecole ronsard" in user_query
             or "where is école ronsard" in user_query
+            or user_query == "location"
         ):
 
             ai_response = (
-                "École Ronsard is located at 21-23 Kinshasa Street "
-                "in East Legon, Accra, Ghana."
+                "École Ronsard is located at "
+                "21-23 Kinshasa Street in East Legon, Accra, Ghana."
             )
 
             st.markdown(ai_response)
-
 
         elif (
             "accreditation" in user_query
@@ -575,10 +408,10 @@ if user_input:
 
             st.markdown(ai_response)
 
-
         elif (
             "principal" in user_query
-            or "head" in user_query
+            or "head teacher" in user_query
+            or "head of school" in user_query
         ):
 
             ai_response = (
@@ -588,37 +421,48 @@ if user_input:
 
             st.markdown(ai_response)
 
+        elif (
+            "campuses" in user_query
+            or "campus" in user_query
+        ):
+
+            ai_response = (
+                "École Ronsard has two campuses: one dedicated "
+                "to Nursery and another for Primary and Secondary students."
+            )
+
+            st.markdown(ai_response)
 
         elif (
             "teachers of ecole ronsard" in user_query
             or "teachers at ecole ronsard" in user_query
+            or "teachers at école ronsard" in user_query
         ):
 
             ai_response = (
-                "The teachers at École Ronsard are highly qualified "
-                "and experienced, dedicated to providing a nurturing "
-                "environment."
+                "The teachers at École Ronsard are qualified and "
+                "experienced educators dedicated to a nurturing environment."
             )
 
             st.markdown(ai_response)
-
 
         elif (
             "admission process" in user_query
             or "enrollment" in user_query
+            or "admission" in user_query
         ):
 
             ai_response = (
-                "The admission process at École Ronsard involves "
-                "an application, assessment, and interview."
+                "The admission process involves an application, "
+                "assessment and interview."
             )
 
             st.markdown(ai_response)
 
-
         elif (
             "who are the staff in ecole ronsard" in user_query
             or "staff members" in user_query
+            or "ronsard staff" in user_query
         ):
 
             staff_members = [
@@ -626,35 +470,239 @@ if user_input:
                 "Mr Jeffery",
                 "Mr Edem",
                 "Mrs Pearl",
-                "Mrs. Agbenyeke",
+                "Mrs Agbenyeke",
                 "Mrs Christene",
-                "Mr. Divine",
-                "Mrs. Authur"
+                "Mr Divine",
+                "Mrs Authur"
             ]
 
-            random_staff = random.sample(
-                staff_members,
-                3
-            )
+            random_staff = random.sample(staff_members, 3)
 
             ai_response = (
                 "Here are 3 featured staff members:\n\n"
                 + "\n".join(
                     [
                         f"**[{i}]** {staff}"
-                        for i, staff in enumerate(
-                            random_staff,
-                            1
-                        )
+                        for i, staff in enumerate(random_staff, 1)
                     ]
                 )
             )
 
             st.markdown(ai_response)
 
+        # =====================================================================
+        # LAYER 1B — SCHOOL COURSE DETAILS
+        # =====================================================================
+
+        elif (
+            "counting" in user_query
+            or "number recognition" in user_query
+        ):
+
+            ai_response = (
+                "[Nursery Math] Counting means naming numbers "
+                "in order and recognising what numbers look like."
+            )
+
+            st.markdown(ai_response)
+
+        elif "shapes" in user_query:
+
+            ai_response = (
+                "[Nursery Math] Basic 2D shapes include "
+                "circles, squares and triangles."
+            )
+
+            st.markdown(ai_response)
+
+        elif (
+            "multiplication" in user_query
+            or "times tables" in user_query
+        ):
+
+            ai_response = (
+                "[Primary Math] Multiplication is repeated addition. "
+                "For example, 3 × 5 = 15."
+            )
+
+            st.markdown(ai_response)
+
+        elif (
+            "fraction" in user_query
+            or "fractions" in user_query
+            or "decimal" in user_query
+            or "decimals" in user_query
+        ):
+
+            ai_response = (
+                "[Upper Primary Math] A fraction represents part "
+                "of a whole. A decimal can represent the same value "
+                "using a decimal point."
+            )
+
+            st.markdown(ai_response)
+
+        elif (
+            "area" in user_query
+            or "perimeter" in user_query
+        ):
+
+            ai_response = (
+                "[Upper Primary Math] Perimeter is the distance "
+                "around a shape. Area is the space inside a shape."
+            )
+
+            st.markdown(ai_response)
+
+        elif (
+            "algebra" in user_query
+            or "solve for x" in user_query
+        ):
+
+            ai_response = (
+                "[Lower Secondary Math] Algebra uses letters to "
+                "represent unknown numbers. For example, "
+                "if x + 5 = 12, x = 7."
+            )
+
+            st.markdown(ai_response)
+
+        elif (
+            "pythagorean" in user_query
+            or "pythagorean theorem" in user_query
+            or "triangle rule" in user_query
+        ):
+
+            ai_response = (
+                "[Lower Secondary Math] The Pythagorean Theorem "
+                "states that a² + b² = c² in a right-angled triangle."
+            )
+
+            st.markdown(ai_response)
+
+        elif "quadratic" in user_query:
+
+            ai_response = (
+                "[Year 10 IGCSE Math] A quadratic equation contains "
+                "a squared variable, such as ax² + bx + c = 0."
+            )
+
+            st.markdown(ai_response)
+
+        elif (
+            "trigonometry" in user_query
+            or "sine" in user_query
+            or "cosine" in user_query
+            or "tangent" in user_query
+        ):
+
+            ai_response = (
+                "[Year 10 IGCSE Math] Trigonometry studies the "
+                "relationship between angles and sides of triangles. "
+                "SOH-CAH-TOA is commonly used."
+            )
+
+            st.markdown(ai_response)
+
+        elif "probability" in user_query:
+
+            ai_response = (
+                "[Year 10 IGCSE Math] Probability measures how "
+                "likely an event is to happen."
+            )
+
+            st.markdown(ai_response)
 
         # =====================================================================
-        # LAYER 2 — MATH ENGINES
+        # LAYER 2 — SQUARE ROOT
+        # =====================================================================
+
+        elif (
+            "square root" in user_query
+            or "sqrt" in user_query
+        ):
+
+            st.caption(
+                "🔹 *[Ronsard AI Square Root Engine Active]*"
+            )
+
+            numbers = get_numbers(user_query)
+
+            if not numbers:
+
+                ai_response = (
+                    "❓ I didn't catch the number. "
+                    "Try: square root of 16"
+                )
+
+                st.warning(ai_response)
+
+            else:
+
+                number = numbers[0]
+
+                if number < 0:
+
+                    ai_response = (
+                        "❌ A real square root cannot be "
+                        "calculated for a negative number."
+                    )
+
+                    st.error(ai_response)
+
+                else:
+
+                    result = math.sqrt(number)
+
+                    ai_response = (
+                        f"➡️ Result: √{format_number(number)} = "
+                        f"{format_number(result)}"
+                    )
+
+                    st.success(ai_response)
+
+        # =====================================================================
+        # LAYER 2 — CUBE ROOT
+        # =====================================================================
+
+        elif (
+            "cube root" in user_query
+            or "cbrt" in user_query
+        ):
+
+            st.caption(
+                "🔹 *[Ronsard AI Cube Root Engine Active]*"
+            )
+
+            numbers = get_numbers(user_query)
+
+            if not numbers:
+
+                ai_response = (
+                    "❓ I didn't catch the number. "
+                    "Try: cube root of 27"
+                )
+
+                st.warning(ai_response)
+
+            else:
+
+                number = numbers[0]
+
+                if number < 0:
+                    result = -((-number) ** (1 / 3))
+                else:
+                    result = number ** (1 / 3)
+
+                ai_response = (
+                    f"➡️ Result: ∛{format_number(number)} = "
+                    f"{format_number(result)}"
+                )
+
+                st.success(ai_response)
+
+        # =====================================================================
+        # LAYER 2 — SQUARE
         # =====================================================================
 
         elif (
@@ -666,33 +714,33 @@ if user_input:
                 "🔹 *[Ronsard AI Squaring Engine Active]*"
             )
 
-            target_number = get_number(user_query)
+            numbers = get_numbers(user_query)
 
-            if target_number is not None:
+            if not numbers:
 
-                try:
-
-                    result = target_number ** 2
-
-                    ai_response = (
-                        f"**Result:** {target_number} squared = "
-                        f"{format_number(result)}"
-                    )
-
-                    st.success(ai_response)
-
-                except Exception:
-
-                    ai_response = "❌ Value overflow error."
-
-                    st.error(ai_response)
-
-            else:
-
-                ai_response = "❓ Try typing: `square 5`"
+                ai_response = (
+                    "❓ I didn't catch the number. "
+                    "Try: square 5"
+                )
 
                 st.warning(ai_response)
 
+            else:
+
+                number = numbers[0]
+
+                result = number ** 2
+
+                ai_response = (
+                    f"➡️ Result: {format_number(number)}² = "
+                    f"{format_number(result)}"
+                )
+
+                st.success(ai_response)
+
+        # =====================================================================
+        # LAYER 2 — CUBE
+        # =====================================================================
 
         elif (
             "cube" in user_query
@@ -703,77 +751,132 @@ if user_input:
                 "🔹 *[Ronsard AI Cubing Engine Active]*"
             )
 
-            target_number = get_number(user_query)
+            numbers = get_numbers(user_query)
 
-            if target_number is not None:
-
-                try:
-
-                    result = target_number ** 3
-
-                    ai_response = (
-                        f"**Result:** {target_number} cubed = "
-                        f"{format_number(result)}"
-                    )
-
-                    st.success(ai_response)
-
-                except Exception:
-
-                    ai_response = "❌ Value overflow error."
-
-                    st.error(ai_response)
-
-            else:
-
-                ai_response = "❓ Try typing: `cube 3`"
-
-                st.warning(ai_response)
-
-
-        elif (
-            "square root" in user_query
-            or "root s" in user_query
-        ):
-
-            st.caption(
-                "🔹 *[Ronsard AI Square Root Engine Active]*"
-            )
-
-            target_number = get_number(user_query)
-
-            if target_number is not None:
-
-                if target_number < 0:
-
-                    ai_response = (
-                        "⚠️ Scale Error: Please use positive numbers."
-                    )
-
-                    st.error(ai_response)
-
-                else:
-
-                    result = math.sqrt(target_number)
-
-                    ai_response = (
-                        f"**Result:** Square root of {target_number} = "
-                        f"{format_number(result)}"
-                    )
-
-                    st.success(ai_response)
-
-            else:
+            if not numbers:
 
                 ai_response = (
-                    "❓ Try typing: `square root 16`"
+                    "❓ I didn't catch the number. "
+                    "Try: cube 3"
                 )
 
                 st.warning(ai_response)
 
+            else:
+
+                number = numbers[0]
+
+                result = number ** 3
+
+                ai_response = (
+                    f"➡️ Result: {format_number(number)}³ = "
+                    f"{format_number(result)}"
+                )
+
+                st.success(ai_response)
 
         # =====================================================================
-        # LAYER 3 — HUGGING FACE FALLBACK
+        # LAYER 2 — BASIC CALCULATOR
+        # =====================================================================
+
+        elif any(
+            op in user_query
+            for op in ["+", "-", "*", "/"]
+        ):
+
+            st.caption(
+                "🔹 *[Ronsard AI Calculator Active]*"
+            )
+
+            numbers = get_numbers(user_query)
+
+            if len(numbers) < 2:
+
+                ai_response = (
+                    "❓ I couldn't find two numbers. "
+                    "Try: 25 + 17"
+                )
+
+                st.warning(ai_response)
+
+            else:
+
+                num1 = numbers[0]
+                num2 = numbers[1]
+
+                if "+" in user_query:
+
+                    result = num1 + num2
+                    symbol = "+"
+
+                elif "*" in user_query:
+
+                    result = num1 * num2
+                    symbol = "×"
+
+                elif "/" in user_query:
+
+                    symbol = "÷"
+
+                    if num2 == 0:
+
+                        ai_response = (
+                            "❌ You cannot divide by zero."
+                        )
+
+                        st.error(ai_response)
+
+                        result = None
+
+                    else:
+
+                        result = num1 / num2
+
+                elif "-" in user_query:
+
+                    result = num1 - num2
+                    symbol = "-"
+
+                else:
+
+                    result = None
+                    symbol = "?"
+
+                if result is not None:
+
+                    ai_response = (
+                        f"➡️ Result: "
+                        f"{format_number(num1)} {symbol} "
+                        f"{format_number(num2)} = "
+                        f"{format_number(result)}"
+                    )
+
+                    st.success(ai_response)
+
+        # =====================================================================
+        # 2 + 2
+        # =====================================================================
+
+        elif user_query.replace(" ", "") == "2+2":
+
+            ai_response = "4"
+
+            st.markdown(ai_response)
+
+        # =====================================================================
+        # EXIT
+        # =====================================================================
+
+        elif user_query in ["exit", "quit", "bye"]:
+
+            ai_response = (
+                "Ronsard AI: Goodbye! 👋"
+            )
+
+            st.markdown(ai_response)
+
+        # =====================================================================
+        # LAYER 3 — HUGGING FACE AI FALLBACK
         # =====================================================================
 
         else:
@@ -795,8 +898,7 @@ if user_input:
                                     "content": (
                                         "You are Ronsard AI, a helpful "
                                         "AI assistant. Give clear, "
-                                        "friendly and reasonably brief "
-                                        "answers."
+                                        "friendly and brief answers."
                                     )
                                 },
                                 {
@@ -808,16 +910,15 @@ if user_input:
                             max_tokens=500
                         )
 
-
                         ai_response = (
-                            response.choices[0].message.content
+                            response.choices[0]
+                            .message
+                            .content
                         )
-
 
                         st.markdown(ai_response)
 
-
-                    except Exception as e:
+                    except Exception as error:
 
                         ai_response = (
                             "❌ The cloud AI encountered an error. "
@@ -826,17 +927,15 @@ if user_input:
 
                         st.error(ai_response)
 
-
             else:
 
                 ai_response = (
                     "❌ Cloud brain unavailable.\n\n"
-                    "Please configure your **HF_TOKEN** "
-                    "secret in your Streamlit Cloud settings."
+                    "Please configure your **HF_TOKEN** secret "
+                    "in your Streamlit Cloud settings."
                 )
 
                 st.error(ai_response)
-
 
     # =========================================================================
     # SAVE ASSISTANT RESPONSE
@@ -846,7 +945,6 @@ if user_input:
         "role": "assistant",
         "content": ai_response
     })
-
 
     # =========================================================================
     # REFRESH
