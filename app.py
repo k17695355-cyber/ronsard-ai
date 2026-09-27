@@ -1,12 +1,12 @@
 import os
 import random
 import math
+import re
 import streamlit as st
 from openai import OpenAI
 
-
 # =============================================================================
-# 1. PAGE CONFIGURATION + DARK CHATGPT-STYLE THEME
+# 1. PAGE CONFIGURATION
 # =============================================================================
 
 st.set_page_config(
@@ -15,94 +15,292 @@ st.set_page_config(
     layout="centered"
 )
 
+# =============================================================================
+# 2. CHATGPT-STYLE RONSARD AI DESIGN
+# =============================================================================
+
 st.markdown("""
 <style>
 
-.stApp,
-div[data-testid="stAppViewMain"] {
-    background-color: #171717 !important;
-    color: #ececec !important;
+/* ============================================================
+   MAIN APP
+   ============================================================ */
+
+.stApp {
+    background: var(--background-color) !important;
 }
+
+[data-testid="stAppViewContainer"] {
+    background: var(--background-color) !important;
+}
+
+[data-testid="stAppViewMain"] {
+    background: var(--background-color) !important;
+}
+
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
 
 section[data-testid="stSidebar"] {
-    background-color: #212121 !important;
-    border-right: 1px solid #2f2f2f !important;
+    background: var(--secondary-background-color) !important;
+    border-right: 1px solid var(--border-color) !important;
 }
 
-div[data-testid="stChatInputContainer"] {
-    background-color: transparent !important;
+section[data-testid="stSidebar"] * {
+    color: var(--text-color) !important;
+}
+
+
+/* ============================================================
+   TITLE
+   ============================================================ */
+
+h1 {
+    font-weight: 700 !important;
+    letter-spacing: -1px !important;
+}
+
+
+/* ============================================================
+   CHAT AREA
+   ============================================================ */
+
+[data-testid="stChatMessage"] {
+    border: none !important;
+    background: transparent !important;
+    padding-top: 14px !important;
+    padding-bottom: 14px !important;
+}
+
+
+/* ============================================================
+   USER MESSAGE
+   ============================================================ */
+
+[data-testid="stChatMessage"]:has(
+    [data-testid="stChatMessageAvatar"] img[alt="user"]
+) {
+    background: var(--secondary-background-color) !important;
+    border-radius: 18px !important;
+    padding: 12px 18px !important;
+    margin-left: auto !important;
+    max-width: 75% !important;
+    width: fit-content !important;
+}
+
+
+/* ============================================================
+   ASSISTANT MESSAGE
+   ============================================================ */
+
+[data-testid="stChatMessage"]:has(
+    [data-testid="stChatMessageAvatar"] img[alt="assistant"]
+) {
+    background: transparent !important;
+    max-width: 100% !important;
+}
+
+
+/* ============================================================
+   CHAT TEXT
+   ============================================================ */
+
+[data-testid="stChatMessage"] p,
+[data-testid="stChatMessage"] li,
+[data-testid="stChatMessage"] span {
+    color: var(--text-color) !important;
+    line-height: 1.6 !important;
+}
+
+
+/* ============================================================
+   CHAT INPUT OUTER AREA
+   ============================================================ */
+
+[data-testid="stChatInputContainer"] {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding-bottom: 18px !important;
+}
+
+
+/* ============================================================
+   CHAT INPUT BOX
+   ============================================================ */
+
+[data-testid="stChatInput"] {
+    background: transparent !important;
     border: none !important;
 }
 
-div[data-testid="stChatInput"] textarea {
-    background-color: #2f2f2f !important;
-    color: #ececec !important;
-    border: 1px solid #424242 !important;
-    border-radius: 28px !important;
-    padding-left: 15px !important;
+
+/* ============================================================
+   TEXT AREA
+   ============================================================ */
+
+[data-testid="stChatInput"] textarea {
+    background: var(--secondary-background-color) !important;
+    color: var(--text-color) !important;
+
+    border: 1px solid var(--border-color) !important;
+
+    border-radius: 26px !important;
+
+    padding: 14px 55px 14px 18px !important;
+
+    font-size: 16px !important;
+
+    min-height: 52px !important;
+
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08) !important;
 }
 
-div[data-testid="stChatMessage"]:has(
-    div[data-testid="stChatMessageAvatar"] img[alt="user"]
-) {
-    background-color: #2f2f2f !important;
-    border-radius: 20px !important;
-    padding: 12px !important;
-    margin-bottom: 12px !important;
-    max-width: 80%;
-    margin-left: auto;
+
+/* ============================================================
+   INPUT PLACEHOLDER
+   ============================================================ */
+
+[data-testid="stChatInput"] textarea::placeholder {
+    color: var(--text-color) !important;
+    opacity: 0.55 !important;
 }
 
-div[data-testid="stChatMessage"]:has(
-    div[data-testid="stChatMessageAvatar"] img[alt="assistant"]
-) {
-    background-color: transparent !important;
-    padding: 12px !important;
-    margin-bottom: 12px !important;
+
+/* ============================================================
+   INPUT FOCUS
+   ============================================================ */
+
+[data-testid="stChatInput"] textarea:focus {
+    border-color: var(--border-color) !important;
+    outline: none !important;
 }
+
+
+/* ============================================================
+   SEND BUTTON
+   ============================================================ */
+
+[data-testid="stChatInput"] button {
+    border-radius: 50% !important;
+}
+
+
+/* ============================================================
+   QUICK SUGGESTION CARDS
+   ============================================================ */
+
+div.stButton > button {
+    background: var(--secondary-background-color) !important;
+
+    color: var(--text-color) !important;
+
+    border: 1px solid var(--border-color) !important;
+
+    border-radius: 14px !important;
+
+    min-height: 70px !important;
+
+    padding: 14px 16px !important;
+
+    text-align: left !important;
+
+    transition:
+        background 0.15s ease,
+        transform 0.15s ease,
+        border 0.15s ease !important;
+}
+
+
+/* ============================================================
+   CARD HOVER
+   ============================================================ */
+
+div.stButton > button:hover {
+    background: var(--background-color) !important;
+
+    border-color: var(--border-color) !important;
+
+    transform: translateY(-1px) !important;
+}
+
+
+/* ============================================================
+   CLEAR CHAT BUTTON
+   ============================================================ */
+
+section[data-testid="stSidebar"] div.stButton > button {
+    min-height: 45px !important;
+
+    border-radius: 10px !important;
+
+    text-align: center !important;
+}
+
+
+/* ============================================================
+   DIVIDERS
+   ============================================================ */
+
+hr {
+    border-color: var(--border-color) !important;
+}
+
+
+/* ============================================================
+   TOP HEADER
+   ============================================================ */
 
 header {
     background: transparent !important;
 }
 
+
+/* ============================================================
+   HIDE STREAMLIT FOOTER
+   ============================================================ */
+
 footer {
     visibility: hidden;
+}
+
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+@media (max-width: 768px) {
+
+    [data-testid="stChatMessage"] {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    [data-testid="stChatMessage"]:has(
+        [data-testid="stChatMessageAvatar"] img[alt="user"]
+    ) {
+        max-width: 90% !important;
+    }
+
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-
 # =============================================================================
-# 2. HUGGING FACE CONNECTION
-# =============================================================================
-
-HF_TOKEN = os.environ.get("HF_TOKEN")
-
-client = OpenAI(
-    base_url="https://router.huggingface.co/v1",
-    api_key=HF_TOKEN if HF_TOKEN else "hf_placeholder"
-)
-
-
-# =============================================================================
-# 3. TITLE
-# =============================================================================
-
-st.title("🤖 Ronsard AI Chatbot")
-st.write("Welcome to the infinite knowledge hub. Ask me anything!")
-
-
-# =============================================================================
-# 4. CHAT MEMORY
+# 5. CHAT MEMORY INITIALIZATION
 # =============================================================================
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+card_prompt = None
+
 
 # =============================================================================
-# 5. SIDEBAR
+# 6. SIDEBAR MANAGEMENT
 # =============================================================================
 
 with st.sidebar:
@@ -115,11 +313,41 @@ with st.sidebar:
 
     st.write("---")
 
-    st.caption("Powered by Ronsard Core v2 & Hugging Face Cloud")
+    st.caption(
+        "Powered by Ronsard Core v3 & Hugging Face Cloud"
+    )
 
 
 # =============================================================================
-# 6. DISPLAY PREVIOUS MESSAGES
+# 7. HELPER FUNCTIONS
+# =============================================================================
+
+def get_number(text):
+
+    match = re.search(
+        r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)",
+        text
+    )
+
+    if match:
+        return float(match.group())
+
+    return None
+
+
+def format_number(number):
+
+    if number == 0:
+        return "0"
+
+    if abs(number) >= 1e15 or abs(number) < 1e-9:
+        return f"{number:.9e}"
+
+    return f"{number:.9f}".rstrip("0").rstrip(".")
+
+
+# =============================================================================
+# 8. DISPLAY PREVIOUS CHAT MESSAGES
 # =============================================================================
 
 for message in st.session_state.messages:
@@ -129,12 +357,78 @@ for message in st.session_state.messages:
 
 
 # =============================================================================
-# 7. CHAT INPUT
+# 9. QUICK SUGGESTION SHORTCUTS
 # =============================================================================
 
-if user_input := st.chat_input("What do you need 💀 lol:"):
+if len(st.session_state.messages) == 0:
 
-    # Show user message
+    st.write("---")
+
+    st.write(
+        "✨ **Quick Suggestion Shortcuts** "
+        "(Click one to test instantly!)"
+    )
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        if st.button(
+            "🏫 About École Ronsard\n"
+            "Learn about curriculum & origins"
+        ):
+            card_prompt = "what is ecole ronsard"
+
+        if st.button(
+            "🧮 Math Squaring Engine\n"
+            "Calculate values up to billions"
+        ):
+            card_prompt = "square 12"
+
+    with col2:
+
+        if st.button(
+            "🎮 Minecraft Optimization Tips\n"
+            "Maximize frames per second"
+        ):
+            card_prompt = "minecraft"
+
+        if st.button(
+            "🌍 Ask Local Cloud AI\n"
+            "Test the global Llama-3 fallback brain"
+        ):
+            card_prompt = "explain black holes like I am five"
+
+    st.write("---")
+
+
+# =============================================================================
+# 10. CHAT INPUT
+# =============================================================================
+
+typed_input = st.chat_input(
+    "What do you need 💀 lol:"
+)
+
+user_input = None
+
+if card_prompt:
+    user_input = card_prompt
+
+elif typed_input:
+    user_input = typed_input
+
+
+# =============================================================================
+# 11. MAIN CHAT PROCESSING
+# =============================================================================
+
+if user_input:
+
+    # -------------------------------------------------------------------------
+    # DISPLAY USER MESSAGE
+    # -------------------------------------------------------------------------
+
     with st.chat_message("user"):
         st.markdown(user_input)
 
@@ -149,70 +443,82 @@ if user_input := st.chat_input("What do you need 💀 lol:"):
 
 
     # =========================================================================
-    # 8. ASSISTANT RESPONSE
+    # ASSISTANT RESPONSE
     # =========================================================================
 
     with st.chat_message("assistant"):
 
 
         # =====================================================================
-        # LAYER 1 — CUSTOM RESPONSES
+        # LAYER 1 — CUSTOM RESPONSES & SCHOOL KNOWLEDGE
         # =====================================================================
 
-        if "hello" in user_query or "hi" in user_query:
+        if user_query in ["hello", "hi", "hey"]:
 
-            ai_response = "Hello there! How can I help you today?"
+            ai_response = (
+                "Hello there! 👋 How can I help you today?"
+            )
+
             st.markdown(ai_response)
 
 
-        elif "your name" in user_query:
+        elif (
+            "your name" in user_query
+            or "who are you" in user_query
+        ):
 
             ai_response = (
-                "I am Ronsard AI, a custom chatbot built in VS Code!"
+                "I am Ronsard AI, a custom chatbot built in Python! 🤖"
             )
+
             st.markdown(ai_response)
 
 
         elif "weather" in user_query:
 
             ai_response = (
-                "I can't check the live weather yet, "
-                "but it looks like a great day to code!"
+                "I cannot check live weather yet, but I can answer "
+                "lots of other questions!"
             )
+
             st.markdown(ai_response)
 
 
         elif "minecraft" in user_query:
 
             ai_response = (
-                "Minecraft is awesome! Make sure to install performance "
-                "mods like Sodium, Lithium, or OptiFine for the best FPS."
+                "Minecraft is awesome! 🎮 Performance mods such as "
+                "Sodium and Lithium can help improve FPS."
             )
+
             st.markdown(ai_response)
 
 
         elif (
             "what is ecole ronsard" in user_query
+            or "what is école ronsard" in user_query
             or "about ecole ronsard" in user_query
+            or "about école ronsard" in user_query
         ):
 
             ai_response = (
-                "École Ronsard is a leading bilingual (French and English) "
-                "international school established in 2009, offering a "
-                "holistic education."
+                "École Ronsard is a bilingual French and English "
+                "international school established in 2009."
             )
+
             st.markdown(ai_response)
 
 
         elif (
             "where is ecole ronsard" in user_query
-            or "location" in user_query
+            or "where is école ronsard" in user_query
         ):
 
             ai_response = (
                 "École Ronsard is located at 21-23 Kinshasa Street "
-                "in East Legon, Accra, Ghana!"
+                "in East Legon, Accra, Ghana."
             )
+
             st.markdown(ai_response)
 
 
@@ -222,10 +528,10 @@ if user_input := st.chat_input("What do you need 💀 lol:"):
         ):
 
             ai_response = (
-                "The school holds dual accreditation from Cambridge "
-                "International (for English, Math, and Science) "
-                "and LabelFrancÉducation."
+                "École Ronsard offers Cambridge International "
+                "and LabelFrancÉducation programmes."
             )
+
             st.markdown(ai_response)
 
 
@@ -238,6 +544,7 @@ if user_input := st.chat_input("What do you need 💀 lol:"):
                 "The principal of École Ronsard is "
                 "Marie-Patricia Agbenyeke."
             )
+
             st.markdown(ai_response)
 
 
@@ -249,8 +556,9 @@ if user_input := st.chat_input("What do you need 💀 lol:"):
             ai_response = (
                 "The teachers at École Ronsard are highly qualified "
                 "and experienced, dedicated to providing a nurturing "
-                "and challenging learning environment."
+                "environment."
             )
+
             st.markdown(ai_response)
 
 
@@ -262,8 +570,9 @@ if user_input := st.chat_input("What do you need 💀 lol:"):
             ai_response = (
                 "The admission process at École Ronsard involves "
                 "an application, assessment, and interview to ensure "
-                "the best fit for the student."
+                "the best fit."
             )
+
             st.markdown(ai_response)
 
 
@@ -283,14 +592,20 @@ if user_input := st.chat_input("What do you need 💀 lol:"):
                 "Mrs. Authur"
             ]
 
-            random_staff = random.sample(staff_members, 3)
+            random_staff = random.sample(
+                staff_members,
+                3
+            )
 
             ai_response = (
                 "Here are 3 featured staff members:\n\n"
                 + "\n".join(
                     [
                         f"**[{i}]** {staff}"
-                        for i, staff in enumerate(random_staff, 1)
+                        for i, staff in enumerate(
+                            random_staff,
+                            1
+                        )
                     ]
                 )
             )
@@ -299,250 +614,195 @@ if user_input := st.chat_input("What do you need 💀 lol:"):
 
 
         # =====================================================================
-        # LAYER 2 — MATH ENGINE: SQUARE
+        # LAYER 2 — CUSTOM MATH ENGINES
         # =====================================================================
 
-        elif "square" in user_query or "squared" in user_query:
+        elif (
+            "square" in user_query
+            or "squared" in user_query
+        ):
 
-            st.caption("🔹 [Ronsard AI Squaring Engine Active]")
+            st.caption(
+                "🔹 *[Ronsard AI Squaring Engine Active]*"
+            )
 
-            try:
+            target_number = get_number(user_query)
 
-                words = (
-                    user_query
-                    .replace("what is", "")
-                    .replace("square", "")
-                    .replace("squared", "")
-                    .split()
-                )
+            if target_number is not None:
 
-                target_number = next(
-                    (
-                        float(word)
-                        for word in words
-                        if word.replace(".", "", 1).isdigit()
-                        or (
-                            word.startswith("-")
-                            and word[1:].replace(".", "", 1).isdigit()
-                        )
-                    ),
-                    None
-                )
-
-                if target_number is not None:
+                try:
 
                     result = target_number ** 2
 
                     ai_response = (
                         f"**Result:** {target_number} squared = "
-                        f"{result:.9f}"
-                    ).rstrip("0").rstrip(".")
+                        f"{format_number(result)}"
+                    )
 
                     st.success(ai_response)
 
-                else:
+                except Exception:
 
-                    ai_response = (
-                        "❓ I didn't catch the number. "
-                        "Try typing: `square 5`"
-                    )
+                    ai_response = "❌ Value overflow error."
 
-                    st.warning(ai_response)
+                    st.error(ai_response)
 
-            except Exception:
+            else:
 
                 ai_response = (
-                    "❌ Could not compute. "
-                    "Please check your text format."
+                    "❓ Try typing: `square 5`"
                 )
 
-                st.error(ai_response)
+                st.warning(ai_response)
 
 
-        # =====================================================================
-        # LAYER 3 — MATH ENGINE: CUBE
-        # =====================================================================
+        elif (
+            "cube" in user_query
+            or "cubed" in user_query
+        ):
 
-        elif "cube" in user_query or "cubed" in user_query:
+            st.caption(
+                "🔹 *[Ronsard AI Cubing Engine Active]*"
+            )
 
-            st.caption("🔹 [Ronsard AI Cubing Engine Active]")
+            target_number = get_number(user_query)
 
-            try:
+            if target_number is not None:
 
-                words = (
-                    user_query
-                    .replace("what is", "")
-                    .replace("cube", "")
-                    .replace("cubed", "")
-                    .split()
-                )
-
-                target_number = next(
-                    (
-                        float(word)
-                        for word in words
-                        if word.replace(".", "", 1).isdigit()
-                        or (
-                            word.startswith("-")
-                            and word[1:].replace(".", "", 1).isdigit()
-                        )
-                    ),
-                    None
-                )
-
-                if target_number is not None:
+                try:
 
                     result = target_number ** 3
 
                     ai_response = (
                         f"**Result:** {target_number} cubed = "
-                        f"{result:.9f}"
-                    ).rstrip("0").rstrip(".")
+                        f"{format_number(result)}"
+                    )
 
                     st.success(ai_response)
 
-                else:
+                except Exception:
 
-                    ai_response = (
-                        "❓ I didn't catch the number. "
-                        "Try typing: `cube 3`"
-                    )
+                    ai_response = "❌ Value overflow error."
 
-                    st.warning(ai_response)
+                    st.error(ai_response)
 
-            except Exception:
+            else:
 
                 ai_response = (
-                    "❌ Could not compute. "
-                    "Please check your text format."
+                    "❓ Try typing: `cube 3`"
                 )
 
-                st.error(ai_response)
+                st.warning(ai_response)
 
-
-        # =====================================================================
-        # LAYER 4 — MATH ENGINE: SQUARE ROOT
-        # =====================================================================
 
         elif (
             "square root" in user_query
-            or "root" in user_query
+            or "root s" in user_query
         ):
 
-            st.caption("🔹 [Ronsard AI Square Root Engine Active]")
+            st.caption(
+                "🔹 *[Ronsard AI Square Root Engine Active]*"
+            )
 
-            try:
+            target_number = get_number(user_query)
 
-                words = (
-                    user_query
-                    .replace("what is", "")
-                    .replace("the", "")
-                    .replace("square root of", "")
-                    .replace("square root", "")
-                    .replace("root", "")
-                    .split()
-                )
+            if target_number is not None:
 
-                target_number = next(
-                    (
-                        float(word)
-                        for word in words
-                        if word.replace(".", "", 1).isdigit()
-                    ),
-                    None
-                )
-
-                if target_number is not None:
-
-                    if target_number < 0:
-
-                        ai_response = (
-                            "⚠️ Scale Error: "
-                            "Please use positive numbers."
-                        )
-
-                        st.error(ai_response)
-
-                    else:
-
-                        result = math.sqrt(target_number)
-
-                        ai_response = (
-                            f"**Result:** Square root of "
-                            f"{target_number} = {result:.9f}"
-                        ).rstrip("0").rstrip(".")
-
-                        st.success(ai_response)
-
-                else:
+                if target_number < 0:
 
                     ai_response = (
-                        "❓ I didn't catch the number. "
-                        "Try typing: `square root of 16`"
-                    )
-
-                    st.warning(ai_response)
-
-            except Exception:
-
-                ai_response = (
-                    "❌ Could not compute. "
-                    "Please check your text format."
-                )
-
-                st.error(ai_response)
-
-
-        # =====================================================================
-        # LAYER 5 — AI FALLBACK
-        # =====================================================================
-
-        else:
-
-            with st.spinner("Searching cosmic database..."):
-
-                try:
-
-                    response = client.chat.completions.create(
-
-                        model="meta-llama/Llama-3.1-8B-Instruct",
-
-                        messages=[
-                            {
-                                "role": "system",
-                                "content": (
-                                    "You are Ronsard AI, a helpful AI "
-                                    "assistant. Give clear, accurate, "
-                                    "friendly answers. Keep answers "
-                                    "reasonably brief."
-                                )
-                            },
-                            {
-                                "role": "user",
-                                "content": user_input
-                            }
-                        ],
-
-                        max_tokens=500
-                    )
-
-                    ai_response = response.choices[0].message.content
-
-                    st.markdown(ai_response)
-
-                except Exception as e:
-
-                    ai_response = (
-                        "❌ The free cloud AI engine encountered "
-                        "an error.\n\n"
-                        "Make sure your HF_TOKEN is configured correctly."
+                        "⚠️ Scale Error: Please use positive numbers."
                     )
 
                     st.error(ai_response)
 
+                else:
+
+                    result = math.sqrt(target_number)
+
+                    ai_response = (
+                        f"**Result:** Square root of "
+                        f"{target_number} = "
+                        f"{format_number(result)}"
+                    )
+
+                    st.success(ai_response)
+
+            else:
+
+                ai_response = (
+                    "❓ Try typing: `square root 16`"
+                )
+
+                st.warning(ai_response)
+
+
+        # =====================================================================
+        # LAYER 3 — HUGGING FACE CLOUD FALLBACK
+        # =====================================================================
+
+        else:
+
+            if client is not None:
+
+                with st.spinner(
+                    "Searching cosmic database..."
+                ):
+
+                    try:
+
+                        response = client.chat.completions.create(
+                            model="meta-llama/Meta-Llama-3-8B-Instruct",
+
+                            messages=[
+                                {
+                                    "role": "system",
+                                    "content": (
+                                        "You are Ronsard AI, a brilliant "
+                                        "AI assistant. Give clear, helpful "
+                                        "and reasonably brief answers."
+                                    )
+                                },
+                                {
+                                    "role": "user",
+                                    "content": user_input
+                                }
+                            ],
+
+                            max_tokens=500
+                        )
+
+                        ai_response = (
+                            response.choices[0]
+                            .message.content
+                        )
+
+                        st.markdown(ai_response)
+
+
+                    except Exception:
+
+                        ai_response = (
+                            "❌ The free cloud engine encountered "
+                            "a slight error. Try hitting enter one "
+                            "more time!"
+                        )
+
+                        st.error(ai_response)
+
+
+            else:
+
+                ai_response = (
+                    "❌ Cloud brain unavailable. Configure your "
+                    "HF_TOKEN secret on Streamlit Cloud settings!"
+                )
+
+                st.error(ai_response)
+
 
     # =========================================================================
-    # 9. SAVE ASSISTANT MESSAGE
+    # SAVE ASSISTANT RESPONSE
     # =========================================================================
 
     st.session_state.messages.append({
