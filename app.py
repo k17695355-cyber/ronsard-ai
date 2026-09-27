@@ -162,27 +162,19 @@ if HF_TOKEN:
         client = None
 
 # =============================================================================
-# 4. BRAND HEADER
+# 4. TITLE
 # =============================================================================
 
 st.markdown(
     """
-    <div style="
-        text-align: center;
-        padding-top: 25px;
-        padding-bottom: 20px;
-    ">
-        <h1 style="font-size: 30px; margin-bottom: 5px;">
-            🤖 Ronsard AI
-        </h1>
-
-        <p style="opacity: 0.6; font-size: 15px;">
-            Your intelligent knowledge hub
-        </p>
+    <div style="text-align: center; padding-top: 25px; padding-bottom: 20px;">
+        <h1 style="font-size: 30px; margin-bottom: 5px;">Ronsard AI</h1>
+        <p>Your Infinite Knowledge Hub</p>
     </div>
     """,
     unsafe_allow_html=True
 )
+
 
 # =============================================================================
 # 5. SESSION STATE
